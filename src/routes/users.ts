@@ -39,21 +39,18 @@ export async function usersRoutes(app: FastifyInstance) {
   app.post('/signin', async (req, res) => {
     const signInUserBodySchema = z.object({
       email: z.string(),
+      password: z.string(),
     })
 
-    const { email } = signInUserBodySchema.parse(req.body)
+    const { email, password } = signInUserBodySchema.parse(req.body)
 
     let { sessionId } = req.cookies
-
-    if (sessionId)
-      return res.status(400).send({
-        error: 'You cannot signin an account if you are logged in',
-      })
 
     const user = await knex('users')
       .select()
       .where({
         email,
+        password,
       })
       .first()
 
@@ -67,5 +64,7 @@ export async function usersRoutes(app: FastifyInstance) {
       path: '/',
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     })
+
+    await knex('users').where('id', user.id).update('session_id', sessionId)
   })
 }
